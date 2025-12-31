@@ -1,13 +1,14 @@
 import type { Handler } from "@netlify/functions";
-import { eq, and, gt } from "drizzle-orm";
-import { db, schema } from "./_lib/db";
+import { and, eq, gt } from "drizzle-orm";
+
 import {
-  verifyRefreshToken,
-  generateTokens,
-  parseRefreshTokenCookie,
   createRefreshTokenCookie,
+  generateTokens,
   jsonResponse,
+  parseRefreshTokenCookie,
+  verifyRefreshToken,
 } from "./_lib/auth";
+import { db, schema } from "./_lib/db";
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -55,9 +56,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Delete old session
-    await db
-      .delete(schema.sessions)
-      .where(eq(schema.sessions.id, session.id));
+    await db.delete(schema.sessions).where(eq(schema.sessions.id, session.id));
 
     // Generate new tokens
     const tokens = generateTokens(user);

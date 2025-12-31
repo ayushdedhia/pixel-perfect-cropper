@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
-import { AuthModal } from "./components/AuthModal";
 import { CropCanvas } from "./components/CropCanvas";
 import { Header } from "./components/Header";
 import { PremiumModal } from "./components/PremiumModal";
@@ -11,10 +11,48 @@ import { StatusBar } from "./components/StatusBar";
 import { UploadArea } from "./components/UploadArea";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { EXPORT_INITIAL_STATE, FILTERS_INITIAL_STATE } from "./constants";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import type { Area, ExportConfig, ImageFilters } from "./types";
 import { getCroppedImg } from "./utils/image-utils";
 
-function AppContent() {
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function MainApp() {
   const { user } = useAuth();
   const isPremium = user?.isPremium ?? false;
 
@@ -31,7 +69,6 @@ function AppContent() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -153,14 +190,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 overflow-hidden text-slate-200">
-      <Toaster theme="dark" position="bottom-center" richColors className="font-sans!" />
-
       <Header
         image={image}
         imageWidth={imgRef.current?.naturalWidth}
         imageHeight={imgRef.current?.naturalHeight}
         onClear={() => setImage(null)}
-        onOpenAuthModal={() => setShowAuthModal(true)}
         onOpenPremiumModal={() => setShowPremiumModal(true)}
       />
 
@@ -215,20 +249,52 @@ function AppContent() {
         isOpen={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
       />
-
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
     </div>
+  );
+}
+
+function AppRoutes() {
+  return (
+    <>
+      <Toaster theme="dark" position="bottom-center" richColors className="font-sans!" />
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <MainApp />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

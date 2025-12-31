@@ -1,5 +1,6 @@
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
 import type { User } from "../../../src/db/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -24,10 +25,7 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
 
-export async function verifyPassword(
-  password: string,
-  hash: string
-): Promise<boolean> {
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
 
@@ -77,22 +75,16 @@ export function extractBearerToken(authHeader: string | undefined): string | nul
 export function parseRefreshTokenCookie(cookieHeader: string | undefined): string | null {
   if (!cookieHeader) return null;
 
-  const cookies = cookieHeader.split(";").reduce(
-    (acc, cookie) => {
-      const [key, value] = cookie.trim().split("=");
-      acc[key] = value;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
+  const cookies = cookieHeader.split(";").reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split("=");
+    acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
 
   return cookies["refresh_token"] || null;
 }
 
-export function createRefreshTokenCookie(
-  refreshToken: string,
-  expiresAt: Date
-): string {
+export function createRefreshTokenCookie(refreshToken: string, expiresAt: Date): string {
   return `refresh_token=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Expires=${expiresAt.toUTCString()}`;
 }
 
@@ -101,7 +93,11 @@ export function clearRefreshTokenCookie(): string {
 }
 
 // Helper for Netlify responses
-export function jsonResponse(statusCode: number, body: object, headers: Record<string, string> = {}) {
+export function jsonResponse(
+  statusCode: number,
+  body: object,
+  headers: Record<string, string> = {}
+) {
   return {
     statusCode,
     body: JSON.stringify(body),

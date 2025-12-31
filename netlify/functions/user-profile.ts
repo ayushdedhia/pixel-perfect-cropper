@@ -1,7 +1,8 @@
 import type { Handler } from "@netlify/functions";
 import { eq } from "drizzle-orm";
+
+import { extractBearerToken, jsonResponse, verifyAccessToken } from "./_lib/auth";
 import { db, schema } from "./_lib/db";
-import { extractBearerToken, verifyAccessToken, jsonResponse } from "./_lib/auth";
 
 export const handler: Handler = async (event) => {
   // Verify authentication

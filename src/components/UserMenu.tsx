@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { LogOut, Crown, Settings, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,6 +9,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
+  const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -29,6 +31,7 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
     setIsOpen(false);
     await logout();
     toast.success("Signed out successfully");
+    navigate("/login");
   };
 
   const initials = user.name
@@ -46,15 +49,13 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors"
       >
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
+        <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
           {initials}
         </div>
-        <span className="text-sm text-neutral-200 hidden sm:block max-w-[100px] truncate">
+        <span className="text-sm text-neutral-200 hidden sm:block max-w-25 truncate">
           {user.name || user.email.split("@")[0]}
         </span>
-        {user.isPremium && (
-          <Crown size={14} className="text-yellow-500 hidden sm:block" />
-        )}
+        {user.isPremium && <Crown size={14} className="text-yellow-500 hidden sm:block" />}
         <ChevronDown
           size={14}
           className={`text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -64,9 +65,7 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 rounded-lg bg-neutral-800 border border-neutral-700 shadow-xl py-1 z-50">
           <div className="px-4 py-3 border-b border-neutral-700">
-            <p className="text-sm font-medium text-white truncate">
-              {user.name || "User"}
-            </p>
+            <p className="text-sm font-medium text-white truncate">{user.name || "User"}</p>
             <p className="text-xs text-neutral-400 truncate">{user.email}</p>
             {user.isPremium && (
               <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium">

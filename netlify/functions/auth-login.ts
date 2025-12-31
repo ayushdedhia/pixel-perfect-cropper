@@ -1,12 +1,13 @@
 import type { Handler } from "@netlify/functions";
 import { eq } from "drizzle-orm";
-import { db, schema } from "./_lib/db";
+
 import {
-  verifyPassword,
-  generateTokens,
   createRefreshTokenCookie,
+  generateTokens,
   jsonResponse,
+  verifyPassword,
 } from "./_lib/auth";
+import { db, schema } from "./_lib/db";
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== "POST") {

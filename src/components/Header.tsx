@@ -1,6 +1,5 @@
-import { Info, X, LogIn } from "lucide-react";
+import { Info, X } from "lucide-react";
 import logoSvg from "../assets/brand/logo.svg";
-import { useAuth } from "../contexts/AuthContext";
 import { UserMenu } from "./UserMenu";
 
 interface HeaderProps {
@@ -8,7 +7,6 @@ interface HeaderProps {
   imageWidth?: number;
   imageHeight?: number;
   onClear: () => void;
-  onOpenAuthModal: () => void;
   onOpenPremiumModal: () => void;
 }
 
@@ -17,11 +15,8 @@ export function Header({
   imageWidth,
   imageHeight,
   onClear,
-  onOpenAuthModal,
   onOpenPremiumModal,
 }: HeaderProps) {
-  const { isAuthenticated, isLoading } = useAuth();
-
   return (
     <header className="h-14 md:h-16 border-b border-slate-800 flex items-center justify-between px-3 md:px-6 bg-slate-900/50 backdrop-blur-md z-30">
       <div className="flex items-center gap-2 select-none">
@@ -46,19 +41,7 @@ export function Header({
           </>
         )}
 
-        {!isLoading && (
-          isAuthenticated ? (
-            <UserMenu onOpenPremiumModal={onOpenPremiumModal} />
-          ) : (
-            <button
-              onClick={onOpenAuthModal}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <LogIn size={16} />
-              <span className="hidden sm:inline">Sign In</span>
-            </button>
-          )
-        )}
+        <UserMenu onOpenPremiumModal={onOpenPremiumModal} />
       </div>
     </header>
   );
