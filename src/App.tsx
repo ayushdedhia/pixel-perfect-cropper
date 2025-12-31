@@ -11,8 +11,10 @@ import { StatusBar } from "./components/StatusBar";
 import { UploadArea } from "./components/UploadArea";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { EXPORT_INITIAL_STATE, FILTERS_INITIAL_STATE } from "./constants";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import type { Area, ExportConfig, ImageFilters } from "./types";
 import { getCroppedImg } from "./utils/image-utils";
 
@@ -271,6 +273,22 @@ function AppRoutes() {
           element={
             <PublicRoute>
               <RegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPasswordPage />
             </PublicRoute>
           }
         />

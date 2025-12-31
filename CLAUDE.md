@@ -5,46 +5,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-npm run dev      # Start Vite dev server with HMR
-npm run build    # TypeScript compile + Vite production build
-npm run lint     # Run ESLint
-npm run preview  # Preview production build locally
+npm run dev        # Start Netlify dev server (frontend + API functions)
+npm run dev:vite   # Start Vite dev server only (no API)
+npm run build      # TypeScript compile + Vite production build
+npm run lint       # Run ESLint
+npm run preview    # Preview production build locally
+npm run db:push    # Push schema changes to Neon DB
+npm run db:generate # Generate Drizzle migrations
+npm run db:studio  # Open Drizzle Studio for DB management
 ```
 
 ## Architecture Overview
 
-PixelCropper is a single-page React application for cropping and editing images. Built with React 19, TypeScript, Vite, and Tailwind CSS 4.
+PixelCropper is a React application for cropping and editing images. Built with React 19, TypeScript, Vite, Tailwind CSS 4, with Neon (serverless Postgres) for authentication and Netlify Functions for the API.
 
 ### Project Structure
 
 ```
 src/
 ├── components/
-│   ├── AdminModal.tsx           # Password-protected admin access
 │   ├── CropCanvas.tsx           # Main crop interface with zoom
 │   ├── CropPreview.tsx          # Desktop preview panel
-│   ├── Header.tsx               # Top nav with logo and controls
+│   ├── Header.tsx               # Top nav with logo and user menu
 │   ├── PremiumModal.tsx         # Premium upgrade modal
 │   ├── StatusBar.tsx            # Bottom metadata bar
 │   ├── UploadArea.tsx           # Drag-drop image upload
+│   ├── UserMenu.tsx             # User dropdown (profile, settings, logout)
 │   └── sidebar/
 │       ├── AdjustmentControls.tsx   # Filter sliders
 │       ├── CropSettings.tsx         # Aspect ratio/shape
 │       ├── ExportSettings.tsx       # Format/quality/export
 │       ├── Sidebar.tsx              # Container
 │       └── TransformControls.tsx    # Rotation/flip
+├── contexts/
+│   └── AuthContext.tsx          # Authentication state provider
+├── pages/
+│   ├── LoginPage.tsx            # Login page with modern UI
+│   ├── RegisterPage.tsx         # Registration page
+│   ├── ForgotPasswordPage.tsx   # Password reset request
+│   └── ResetPasswordPage.tsx    # Password reset form
+├── db/
+│   └── schema.ts                # Drizzle ORM schema (users, sessions, etc.)
 ├── utils/
+│   ├── api.ts                   # API client with auth headers
 │   ├── image-utils.ts           # Canvas-based image processing
 │   └── storage.ts               # IndexedDB persistence
-├── assets/brand/                # Logo assets
-├── App.tsx                      # Main component with all state
+├── assets/brand/                # Logo assets (logo.svg, logo-monochrome.svg)
+├── App.tsx                      # Main component with routing
 ├── constants.ts                 # Aspect ratios, initial states
 ├── types.ts                     # TypeScript definitions
-├── index.css                    # Tailwind + global styles
+├── index.css                    # Tailwind + global styles (Plus Jakarta Sans font)
 └── main.tsx                     # Entry point
+
+netlify/functions/               # Serverless API endpoints
+├── _lib/
+│   ├── auth.ts                  # JWT utilities, password hashing
+│   └── db.ts                    # Neon DB connection
+├── auth-register.ts             # POST /auth-register
+├── auth-login.ts                # POST /auth-login
+├── auth-logout.ts               # POST /auth-logout
+├── auth-refresh.ts              # POST /auth-refresh
+├── auth-me.ts                   # GET /auth-me
+├── auth-forgot-password.ts      # POST /auth-forgot-password
+├── auth-reset-password.ts       # POST /auth-reset-password
+├── user-profile.ts              # GET/PUT /user-profile
+└── user-premium.ts              # POST /user-premium
 ```
 
-### Core Data Flow
+## Authentication System
+
+### Database (Neon + Drizzle ORM)
+
+Schema in `src/db/schema.ts`:
+- **users**: id, email, passwordHash, name, isPremium, createdAt, updatedAt
+- **sessions**: id, userId, refreshToken, expiresAt, createdAt
+- **preferences**: id, userId, defaultExportFormat, defaultQuality, theme
+- **passwordResetTokens**: id, userId, token, expiresAt, usedAt, createdAt
+
+### JWT Strategy
+- **Access Token**: Short-lived (15 min), stored in memory
+- **Refresh Token**: Long-lived (7 days), stored in httpOnly cookie
+- Auto-refresh on 401 responses via `api.ts`
+
+### Auth Flow
+1. Login/Register → Receive access + refresh tokens
+2. API calls → Include access token in Authorization header
+3. Token expires → Auto-refresh using refresh token
+4. Logout → Clear tokens, invalidate session in DB
+
+### Password Reset Flow
+1. User requests reset → Token generated (1 hour expiry)
+2. Demo mode shows reset URL directly (production would email)
+3. User sets new password → All sessions invalidated
+
+### Protected Routes
+- `ProtectedRoute` - Redirects to `/login` if not authenticated
+- `PublicRoute` - Redirects to `/` if already authenticated
+
+## Core Data Flow
 
 1. **Image Upload** - User drops/selects image → `fileToDataUrl()` converts to data URL
 2. **Live Editing** - Crop selection and filters applied via CSS transforms for real-time preview
@@ -52,7 +110,7 @@ src/
 
 ### State Management (App.tsx)
 
-All state lives in App.tsx using React hooks:
+All image editing state lives in MainApp component:
 
 | State | Purpose |
 |-------|---------|
@@ -62,7 +120,13 @@ All state lives in App.tsx using React hooks:
 | `filters` | All adjustment values (brightness, contrast, etc.) |
 | `exportConfig` | Format, quality, circular flag |
 | `history` | Undo stack (max 15 states) |
-| `isPremium` | Watermark skip flag |
+
+User state managed via `AuthContext`:
+| State | Purpose |
+|-------|---------|
+| `user` | Current user object (includes isPremium) |
+| `isAuthenticated` | Whether user is logged in |
+| `isLoading` | Auth state loading |
 
 ## Image Processing Pipeline
 
@@ -87,7 +151,7 @@ Free users get watermarks on exports:
 - 20% opacity main, 12% secondary
 - Font: italic Georgia, size 12% of image height
 
-Premium (`isPremium=true`) skips watermarks entirely.
+Premium (`user.isPremium=true`) skips watermarks entirely.
 
 ## Key Components
 
@@ -98,11 +162,17 @@ Premium (`isPremium=true`) skips watermarks entirely.
 - Zoom to selection feature (2x zoom, desktop only)
 - Grid background pattern
 
-### CropPreview.tsx
-- Desktop-only floating preview panel
-- Shows final cropped result with filters
-- Displays selection dimensions
-- Closable panel
+### UserMenu.tsx
+- Avatar button with user initials
+- Dropdown with profile info, settings, logout
+- Premium badge display
+- Upgrade to Premium option for free users
+
+### Auth Pages (LoginPage, RegisterPage, etc.)
+- Modern split-screen layouts
+- Gradient backgrounds with animated blur shapes
+- Crop-related decorative patterns
+- Mobile responsive
 
 ### Sidebar Components
 - **CropSettings**: Aspect ratio buttons + circular/square toggle
@@ -110,34 +180,36 @@ Premium (`isPremium=true`) skips watermarks entirely.
 - **AdjustmentControls**: Sliders for brightness, contrast, saturation, blur + grayscale/sepia toggles + undo/reset
 - **ExportSettings**: Format dropdown, quality slider (disabled for PNG), export/copy buttons
 
-## Export Functionality
+## API Client (src/utils/api.ts)
 
-Two export methods:
-- **Download**: Exports in selected format (PNG/JPEG/WebP) with quality setting
-- **Copy to Clipboard**: Always exports as PNG regardless of format setting
+Centralized API client with:
+- Base URL: `/.netlify/functions`
+- Auto-attach Authorization header
+- Token refresh on 401
+- Type-safe response handling
 
-Quality slider disabled for PNG (lossless format).
+```typescript
+authApi.login(email, password)
+authApi.register(email, password, name?)
+authApi.logout()
+authApi.refresh()
+authApi.me()
+authApi.forgotPassword(email)
+authApi.resetPassword(token, password)
 
-## Admin System
+userApi.getProfile()
+userApi.updateProfile({ name?, preferences? })
+userApi.upgradeToPremium(paymentId)
+```
 
-Secret admin access bypasses premium/watermark restrictions:
+## Environment Variables
 
-**Access Methods:**
-- Keyboard: `Ctrl+Alt+Shift+U`
-- Mobile: Long-press logo for 2 seconds
-
-**Passcode:** `pixel2024` (hardcoded in AdminModal.tsx)
-
-**Persistence:** Uses IndexedDB (database: `pxc_store`, key: `pxc_admin`)
-
-## Storage (storage.ts)
-
-IndexedDB wrapper functions:
-- `getValue<T>(key)` - Retrieve value
-- `setValue<T>(key, value)` - Store value
-- `removeValue(key)` - Delete value
-
-Used for persisting admin status across sessions.
+Required in `.env`:
+```
+DATABASE_URL=postgresql://...     # Neon connection string
+JWT_SECRET=...                    # Secret for access tokens
+JWT_REFRESH_SECRET=...            # Secret for refresh tokens
+```
 
 ## Type Definitions (types.ts)
 
@@ -170,20 +242,28 @@ interface ExportConfig { format, quality, circular }
 | Package | Purpose |
 |---------|---------|
 | react-image-crop | Interactive crop UI with aspect ratio constraints |
-| lucide-react | Icon library (30+ icons) |
+| lucide-react | Icon library |
 | sonner | Toast notifications |
 | tailwindcss | Utility-first CSS |
+| react-router-dom | Client-side routing |
+| @neondatabase/serverless | Neon DB driver |
+| drizzle-orm | Type-safe ORM |
+| bcryptjs | Password hashing |
+| jsonwebtoken | JWT generation/verification |
 
 ## Responsive Design
 
 - **Mobile**: Single column, sidebar at bottom (max 50vh), larger touch targets
-- **Desktop**: Split layout, sidebar fixed right, preview panel visible
+- **Desktop**: Split layout, sidebar fixed right
 - Breakpoints via Tailwind (sm:, md:, lg:)
 
 ## UI Features
 
-- Toast notifications for clipboard success/failure
-- Loading states on export buttons
+- Plus Jakarta Sans font
+- Toast notifications for actions
+- Loading states on buttons
 - Custom webkit scrollbar styling
 - Grid background pattern in crop canvas
 - Undo history (max 15 states) for filter changes
+- Glass effect dropdowns with backdrop blur
+- Gradient avatars with glow effects

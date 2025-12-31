@@ -116,6 +116,15 @@ export interface ProfileResponse {
   preferences: UserPreferences | null;
 }
 
+export interface ForgotPasswordResponse {
+  message: string;
+  resetUrl?: string; // Only returned in demo mode
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
 export const authApi = {
   register: (email: string, password: string, name?: string) =>
     api<AuthResponse>("/auth-register", {
@@ -143,6 +152,20 @@ export const authApi = {
     }),
 
   me: () => api<ProfileResponse>("/auth-me"),
+
+  forgotPassword: (email: string) =>
+    api<ForgotPasswordResponse>("/auth-forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      skipAuth: true,
+    }),
+
+  resetPassword: (token: string, password: string) =>
+    api<ResetPasswordResponse>("/auth-reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+      skipAuth: true,
+    }),
 };
 
 export const userApi = {
