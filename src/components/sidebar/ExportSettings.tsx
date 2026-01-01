@@ -1,5 +1,7 @@
-import { Check, Copy, Download, Settings2, Sparkles } from "lucide-react";
+import { Check, Copy, Download, Settings2, Sparkles, Coins, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { ExportConfig, ExportFormat } from "../../types";
+import type { CreditWallet } from "../../utils/api";
 
 interface ExportSettingsProps {
   exportConfig: ExportConfig;
@@ -7,6 +9,7 @@ interface ExportSettingsProps {
   isCopying: boolean;
   canExport: boolean;
   isPremium: boolean;
+  wallet: CreditWallet | null;
   onExportConfigChange: (config: Partial<ExportConfig>) => void;
   onDownload: () => void;
   onCopyToClipboard: () => void;
@@ -19,11 +22,21 @@ export function ExportSettings({
   isCopying,
   canExport,
   isPremium,
+  wallet,
   onExportConfigChange,
   onDownload,
   onCopyToClipboard,
   onShowPremiumModal,
 }: ExportSettingsProps) {
+  const navigate = useNavigate();
+
+  // Calculate credit cost
+  const baseCost = 2;
+  const formatCost = exportConfig.format === "image/webp" ||
+    (exportConfig.format === "image/jpeg" && exportConfig.quality > 90) ? 1 : 0;
+  const totalCost = baseCost + formatCost;
+  const canAfford = (wallet?.balance ?? 0) >= totalCost;
+
   return (
     <div className="p-4 md:p-6 bg-slate-900 border-t border-slate-800 sticky bottom-0">
       <div className="flex items-center gap-2 mb-3 md:mb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
@@ -65,10 +78,47 @@ export function ExportSettings({
         </div>
       </div>
 
+
+      {/* Credit cost preview */}
+      <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Export Cost</span>
+          <div className="flex items-center gap-1.5">
+            <Coins size={12} className="text-amber-400" />
+            <span className="text-sm font-bold text-white">{totalCost}</span>
+            <span className="text-[10px] text-slate-500">credits</span>
+          </div>
+        </div>
+        <div className="space-y-1 text-[10px] text-slate-500">
+          <div className="flex justify-between">
+            <span>Base export</span>
+            <span>{baseCost}</span>
+          </div>
+          {formatCost > 0 && (
+            <div className="flex justify-between text-blue-400">
+              <span>Premium format</span>
+              <span>+{formatCost}</span>
+            </div>
+          )}
+        </div>
+        {!canAfford && (
+          <div className="mt-2 flex items-center gap-1.5 text-red-400 text-[10px]">
+            <AlertCircle size={12} />
+            <span>Insufficient credits</span>
+            <button
+              onClick={() => navigate("/store")}
+              className="ml-auto text-violet-400 hover:text-violet-300 font-medium"
+            >
+              Buy more
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-row md:flex-col gap-2 md:gap-3">
         <button
           onClick={onDownload}
-          disabled={isDownloading || !canExport}
+          disabled={isDownloading || !canExport || !canAfford}
           className="flex-1 md:flex-none w-full flex items-center justify-center gap-2 md:gap-3 py-3 md:py-4 bg-white text-slate-950 rounded-xl md:rounded-2xl font-black text-xs md:text-sm hover:bg-indigo-50 transition-all disabled:opacity-30 disabled:scale-95 shadow-xl shadow-white/5 active:scale-95"
         >
           <Download className="w-4 h-4 md:w-5 md:h-5" />
@@ -77,7 +127,7 @@ export function ExportSettings({
         </button>
         <button
           onClick={onCopyToClipboard}
-          disabled={isCopying || !canExport}
+          disabled={isCopying || !canExport || !canAfford}
           className="flex-1 md:flex-none w-full flex items-center justify-center gap-2 md:gap-3 py-3 bg-slate-800 text-white rounded-xl font-bold border border-slate-700 hover:bg-slate-700 transition-all disabled:opacity-30 text-xs active:scale-95"
         >
           <Copy className="w-4 h-4" />
@@ -90,7 +140,7 @@ export function ExportSettings({
       {isPremium ? (
         <div className="flex items-center justify-center gap-1.5 mt-3 text-emerald-400 text-[10px] font-medium">
           <Check className="w-3 h-3" />
-          <span>Premium</span>
+          <span>Premium - Free watermark removal</span>
         </div>
       ) : (
         <button
@@ -98,7 +148,7 @@ export function ExportSettings({
           className="w-full flex items-center justify-center gap-1.5 mt-2 text-slate-500 hover:text-indigo-400 text-[10px] font-medium transition-colors"
         >
           <Sparkles className="w-3 h-3" />
-          <span>Remove Watermark - ₹299</span>
+          <span>Get Premium - ₹299</span>
         </button>
       )}
     </div>

@@ -2,6 +2,7 @@ import type { Handler } from "@netlify/functions";
 import { eq } from "drizzle-orm";
 
 import { createRefreshTokenCookie, generateTokens, hashPassword, jsonResponse } from "./_lib/auth";
+import { CREDIT_CONSTANTS } from "./_lib/credits";
 import { db, schema } from "./_lib/db";
 
 export const handler: Handler = async (event) => {
@@ -55,6 +56,26 @@ export const handler: Handler = async (event) => {
     // Create default preferences
     await db.insert(schema.preferences).values({
       userId: newUser.id,
+    });
+
+    // Create credit wallet with initial monthly credits
+    const initialCredits = CREDIT_CONSTANTS.FREE_MONTHLY_CREDITS;
+    const [wallet] = await db
+      .insert(schema.creditWallets)
+      .values({
+        userId: newUser.id,
+        balance: initialCredits,
+        monthlyCreditsLimit: initialCredits,
+      })
+      .returning();
+
+    // Record the initial credit grant transaction
+    await db.insert(schema.creditTransactions).values({
+      walletId: wallet.id,
+      type: "monthly_grant",
+      amount: initialCredits,
+      balanceAfter: initialCredits,
+      description: "Welcome bonus - Monthly credits",
     });
 
     return {

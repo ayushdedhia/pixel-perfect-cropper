@@ -1,5 +1,6 @@
 import { Info, X } from "lucide-react";
 import logoSvg from "../assets/brand/logo.svg";
+import { CreditDisplay } from "./CreditDisplay";
 import { UserMenu } from "./UserMenu";
 
 interface HeaderProps {
@@ -43,6 +44,7 @@ export function Header({
           </>
         )}
 
+        <CreditDisplay />
         <UserMenu onOpenPremiumModal={onOpenPremiumModal} />
       </div>
     </header>

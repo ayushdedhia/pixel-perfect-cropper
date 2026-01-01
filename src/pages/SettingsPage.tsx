@@ -1,5 +1,19 @@
-import { ArrowLeft, Camera, Check, Copy, Eye, EyeOff, Gift, Loader2, Moon, Share2, Sun, Monitor, Trash2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import {
+  ArrowLeft,
+  Camera,
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  Gift,
+  Loader2,
+  Monitor,
+  Moon,
+  Share2,
+  Sun,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -216,10 +230,13 @@ export function SettingsPage() {
     <div className="min-h-screen bg-slate-950 relative overflow-hidden">
       {/* Navbar - consistent across pages */}
       <header className="h-14 md:h-16 border-b border-slate-800/80 flex items-center justify-between px-3 md:px-6 bg-slate-900/70 backdrop-blur-xl z-30 relative">
-        <Link to="/" className="flex items-center gap-2.5 select-none hover:opacity-90 transition-opacity">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 select-none hover:opacity-90 transition-opacity"
+        >
           <img src={logoSvg} alt="PixelCropper Logo" className="w-8 h-8 md:w-9 md:h-9" />
           <h1 className="text-base md:text-lg font-bold">
-            <span className="bg-gradient-to-r from-white via-white to-violet-200 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-white via-white to-violet-200 bg-clip-text text-transparent">
               <span className="hidden sm:inline">PixelPerfect </span>Cropper
             </span>
           </h1>
@@ -255,7 +272,9 @@ export function SettingsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Profile Card */}
             <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
-              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Profile</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">
+                Profile
+              </h2>
 
               {/* Avatar - centered on mobile */}
               <div className="flex flex-col sm:flex-row items-center gap-4 mb-5">
@@ -267,7 +286,7 @@ export function SettingsPage() {
                       className="w-20 h-20 sm:w-16 sm:h-16 rounded-full object-cover ring-2 ring-violet-500/30"
                     />
                   ) : (
-                    <div className="w-20 h-20 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-violet-600 via-violet-500 to-purple-500 flex items-center justify-center text-white text-2xl sm:text-xl font-semibold">
+                    <div className="w-20 h-20 sm:w-16 sm:h-16 rounded-full bg-linear-to-br from-violet-600 via-violet-500 to-purple-500 flex items-center justify-center text-white text-2xl sm:text-xl font-semibold">
                       {initials}
                     </div>
                   )}
@@ -353,11 +372,16 @@ export function SettingsPage() {
 
             {/* Security Card */}
             <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
-              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Security</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">
+                Security
+              </h2>
 
               <form onSubmit={handleChangePassword} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label
+                    htmlFor="currentPassword"
+                    className="block text-sm font-medium text-slate-300 mb-1.5"
+                  >
                     Current Password
                   </label>
                   <div className="relative">
@@ -375,13 +399,20 @@ export function SettingsPage() {
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-300 active:text-white transition-colors"
                     >
-                      {showCurrentPassword ? <EyeOff size={18} className="sm:w-4 sm:h-4" /> : <Eye size={18} className="sm:w-4 sm:h-4" />}
+                      {showCurrentPassword ? (
+                        <EyeOff size={18} className="sm:w-4 sm:h-4" />
+                      ) : (
+                        <Eye size={18} className="sm:w-4 sm:h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label
+                    htmlFor="newPassword"
+                    className="block text-sm font-medium text-slate-300 mb-1.5"
+                  >
                     New Password
                   </label>
                   <div className="relative">
@@ -399,13 +430,20 @@ export function SettingsPage() {
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-300 active:text-white transition-colors"
                     >
-                      {showNewPassword ? <EyeOff size={18} className="sm:w-4 sm:h-4" /> : <Eye size={18} className="sm:w-4 sm:h-4" />}
+                      {showNewPassword ? (
+                        <EyeOff size={18} className="sm:w-4 sm:h-4" />
+                      ) : (
+                        <Eye size={18} className="sm:w-4 sm:h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-medium text-slate-300 mb-1.5"
+                  >
                     Confirm Password
                   </label>
                   <input
@@ -421,7 +459,9 @@ export function SettingsPage() {
 
                 <button
                   type="submit"
-                  disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  disabled={
+                    isChangingPassword || !currentPassword || !newPassword || !confirmPassword
+                  }
                   className="w-full py-3 sm:py-2.5 bg-slate-700/50 hover:bg-slate-600/50 active:bg-slate-500/50 disabled:bg-slate-700/30 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-base sm:text-sm border border-slate-600/50"
                 >
                   {isChangingPassword ? (
@@ -439,7 +479,9 @@ export function SettingsPage() {
 
           {/* Preferences Card - Full Width */}
           <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
-            <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Preferences</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
+              Preferences
+            </h2>
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
@@ -481,7 +523,9 @@ export function SettingsPage() {
               <>
                 {/* User's referral code with copy button */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Your Referral Code</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Your Referral Code
+                  </label>
                   <div className="flex gap-2">
                     <input
                       value={referralData?.code || ""}
@@ -493,7 +537,11 @@ export function SettingsPage() {
                       className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 active:bg-slate-500/50 border border-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all"
                       title="Copy code"
                     >
-                      {copiedCode ? <Check size={18} className="text-emerald-400" /> : <Copy size={18} />}
+                      {copiedCode ? (
+                        <Check size={18} className="text-emerald-400" />
+                      ) : (
+                        <Copy size={18} />
+                      )}
                     </button>
                     <button
                       onClick={handleShareCode}
@@ -508,12 +556,16 @@ export function SettingsPage() {
                 {/* Referral stats */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="p-3 sm:p-4 bg-slate-800/30 rounded-xl border border-slate-700/30">
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{referralData?.successfulReferrals || 0}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">
+                      {referralData?.successfulReferrals || 0}
+                    </p>
                     <p className="text-xs sm:text-sm text-slate-500">Successful Referrals</p>
                   </div>
                   <div className="p-3 sm:p-4 bg-slate-800/30 rounded-xl border border-slate-700/30">
                     <p className="text-2xl sm:text-3xl font-bold text-emerald-400">
-                      {(referralData?.successfulReferrals || 0) >= 3 ? "Earned!" : `${3 - (referralData?.successfulReferrals || 0)} more`}
+                      {(referralData?.successfulReferrals || 0) >= 3
+                        ? "Earned!"
+                        : `${3 - (referralData?.successfulReferrals || 0)} more`}
                     </p>
                     <p className="text-xs sm:text-sm text-slate-500">Free Premium</p>
                   </div>
@@ -522,12 +574,15 @@ export function SettingsPage() {
                 {/* Benefits explanation */}
                 <div className="p-3 sm:p-4 bg-linear-to-r from-violet-500/10 to-fuchsia-500/10 rounded-xl border border-violet-500/20">
                   <p className="text-sm text-slate-300 mb-2">
-                    <span className="font-semibold text-white">Share your code</span> and both you and your friend get{" "}
+                    <span className="font-semibold text-white">Share your code</span> and both you
+                    and your friend get{" "}
                     <span className="text-emerald-400 font-semibold">10% off</span> Premium!
                   </p>
                   <p className="text-sm text-slate-400">
-                    Get <span className="text-violet-400 font-semibold">3 friends</span> to go Premium and earn{" "}
-                    <span className="text-emerald-400 font-semibold">Free Premium</span> for yourself!
+                    Get <span className="text-violet-400 font-semibold">3 friends</span> to go
+                    Premium and earn{" "}
+                    <span className="text-emerald-400 font-semibold">Free Premium</span> for
+                    yourself!
                   </p>
                 </div>
 
@@ -541,7 +596,9 @@ export function SettingsPage() {
                           key={index}
                           className="flex items-center justify-between p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/30"
                         >
-                          <span className="text-sm text-slate-400 font-mono">{referredUser.email}</span>
+                          <span className="text-sm text-slate-400 font-mono">
+                            {referredUser.email}
+                          </span>
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
                               referredUser.status === "paid"

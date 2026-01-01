@@ -1,4 +1,5 @@
 import type { ExportConfig, ImageFilters } from "../../types";
+import type { CreditWallet } from "../../utils/api";
 import { AdjustmentControls } from "./AdjustmentControls";
 import { CropSettings } from "./CropSettings";
 import { ExportSettings } from "./ExportSettings";
@@ -13,6 +14,7 @@ interface SidebarProps {
   isCopying: boolean;
   canExport: boolean;
   isPremium: boolean;
+  wallet: CreditWallet | null;
   onAspectChange: (aspect: number | undefined) => void;
   onCircularChange: (circular: boolean) => void;
   onUpdateFilters: (filters: Partial<ImageFilters>) => void;
@@ -32,6 +34,7 @@ export function Sidebar({
   isCopying,
   canExport,
   isPremium,
+  wallet,
   onAspectChange,
   onCircularChange,
   onUpdateFilters,
@@ -62,6 +65,7 @@ export function Sidebar({
         isCopying={isCopying}
         canExport={canExport}
         isPremium={isPremium}
+        wallet={wallet}
         onExportConfigChange={onExportConfigChange}
         onDownload={onDownload}
         onCopyToClipboard={onCopyToClipboard}

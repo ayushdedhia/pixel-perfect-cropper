@@ -28,9 +28,10 @@ PixelCropper is a React application for cropping and editing images. Built with 
 ```
 src/
 ├── components/
+│   ├── CreditDisplay.tsx        # Credit balance badge for header
 │   ├── CropCanvas.tsx           # Main crop interface with zoom
 │   ├── CropPreview.tsx          # Desktop preview panel
-│   ├── Header.tsx               # Top nav with logo and user menu
+│   ├── Header.tsx               # Top nav with logo, credits, and user menu
 │   ├── LoadingScreen.tsx        # Full-screen loading spinner
 │   ├── PremiumModal.tsx         # Premium upgrade modal with Razorpay + referral input
 │   ├── ProfilePictureCropper.tsx # Modal for cropping profile pictures
@@ -41,11 +42,11 @@ src/
 │   └── sidebar/
 │       ├── AdjustmentControls.tsx   # Filter sliders
 │       ├── CropSettings.tsx         # Aspect ratio/shape
-│       ├── ExportSettings.tsx       # Format/quality/export
+│       ├── ExportSettings.tsx       # Format/quality/export with credit cost preview
 │       ├── Sidebar.tsx              # Container
 │       └── TransformControls.tsx    # Rotation/flip
 ├── contexts/
-│   ├── AuthContext.tsx          # Authentication state provider
+│   ├── AuthContext.tsx          # Authentication + wallet state provider
 │   └── ThemeContext.tsx         # Theme state (light/dark/system)
 ├── pages/
 │   ├── HomePage.tsx             # Main cropper interface
@@ -53,7 +54,8 @@ src/
 │   ├── RegisterPage.tsx         # Registration page
 │   ├── ForgotPasswordPage.tsx   # Password reset request
 │   ├── ResetPasswordPage.tsx    # Password reset form
-│   └── SettingsPage.tsx         # User settings (profile, password, theme, referrals)
+│   ├── SettingsPage.tsx         # User settings (profile, password, theme, referrals)
+│   └── StorePage.tsx            # Credit store for purchasing credit packs
 ├── db/
 │   └── schema.ts                # Drizzle ORM schema (users, sessions, referrals, payments)
 ├── utils/
@@ -72,23 +74,30 @@ src/
 netlify/functions/               # Serverless API endpoints
 ├── _lib/
 │   ├── auth.ts                  # JWT utilities, password hashing
+│   ├── credits.ts               # Credit system constants and helpers
 │   ├── db.ts                    # Neon DB connection
 │   └── referral.ts              # Referral code utilities and constants
-├── auth-register.ts             # POST /auth-register
+├── auth-register.ts             # POST /auth-register (creates wallet on signup)
 ├── auth-login.ts                # POST /auth-login
 ├── auth-logout.ts               # POST /auth-logout
 ├── auth-refresh.ts              # POST /auth-refresh
-├── auth-me.ts                   # GET /auth-me
+├── auth-me.ts                   # GET /auth-me (includes wallet data)
 ├── auth-forgot-password.ts      # POST /auth-forgot-password
 ├── auth-reset-password.ts       # POST /auth-reset-password
 ├── user-profile.ts              # GET/PUT /user-profile
 ├── user-premium.ts              # POST /user-premium (verify payment + referral tracking)
 ├── user-change-password.ts      # POST /user-change-password
 ├── upload-signature.ts          # GET /upload-signature (Cloudinary signed uploads)
-├── payment-create-order.ts      # POST /payment-create-order (Razorpay)
+├── payment-create-order.ts      # POST /payment-create-order (Razorpay for premium)
 ├── referral-code.ts             # GET /referral-code (get user's referral code)
 ├── referral-validate.ts         # POST /referral-validate (validate a code)
-└── referral-apply.ts            # POST /referral-apply (apply code to account)
+├── referral-apply.ts            # POST /referral-apply (apply code to account)
+├── credits-balance.ts           # GET /credits-balance (wallet balance + monthly reset)
+├── credits-packs.ts             # GET /credits-packs (list purchasable packs)
+├── credits-calculate.ts         # POST /credits-calculate (preview export cost)
+├── credits-deduct.ts            # POST /credits-deduct (deduct for export)
+├── credits-create-order.ts      # POST /credits-create-order (Razorpay for packs)
+└── credits-verify-purchase.ts   # POST /credits-verify-purchase (verify + grant credits)
 ```
 
 ## Authentication System
@@ -103,6 +112,10 @@ Schema in `src/db/schema.ts`:
 - **payments**: id, userId, razorpayOrderId, razorpayPaymentId, razorpaySignature, amount, currency, status, createdAt, updatedAt
 - **referralCodes**: id, userId, code (unique "PIXEL-XXXXXX"), successfulReferrals, createdAt
 - **referralUsages**: id, referralCodeId, referredUserId, paymentId, status ("pending"/"paid"), discountApplied, createdAt, paidAt
+- **creditWallets**: id, userId (unique), balance, monthlyCreditsUsed, monthlyCreditsLimit, lastMonthlyReset, createdAt, updatedAt
+- **creditTransactions**: id, walletId, type ("monthly_grant"|"purchase"|"export"|"refund"), amount, balanceAfter, description, metadata, createdAt
+- **creditPacks**: id, name, credits, bonusCredits, priceInPaise, isActive, sortOrder, createdAt
+- **creditPurchases**: id, userId, packId, razorpayOrderId, razorpayPaymentId, razorpaySignature, creditsGranted, amountPaid, status, createdAt
 
 ### JWT Strategy
 - **Access Token**: Short-lived (15 min), stored in memory
@@ -182,6 +195,56 @@ REFERRAL_CONSTANTS = {
 - **PremiumModal**: Referral code input with "PIXEL-" prefix badge, info tooltip
 - **SettingsPage**: Referral Program card with user's code, copy/share buttons, stats, referred users list
 
+## Credits System
+
+### Overview
+Users consume credits for exports and can purchase credit packs. Premium is a feature unlock (watermark removal), not a way to avoid credits.
+
+### Credit Costs
+
+| Action | Cost |
+|--------|------|
+| Base export | 2 credits |
+| Premium format (WebP) | +1 credit |
+| High-quality JPEG (>90%) | +1 credit |
+| Watermark removal | **Premium only** (not purchasable) |
+
+### Monthly Allowances
+- **Free users**: 50 credits/month (auto-refresh)
+- **Premium users**: 150 credits/month (auto-refresh)
+- Purchased credits never expire
+
+### Credit Packs (Store)
+
+| Pack | Credits | Price |
+|------|---------|-------|
+| Noob | 50 | ₹49 |
+| Value | 100 | ₹99 |
+| Rich | 200 | ₹149 |
+| Deal Breaker | 500 | ₹349 |
+
+### Constants (`netlify/functions/_lib/credits.ts`)
+```typescript
+CREDIT_CONSTANTS = {
+  FREE_MONTHLY_CREDITS: 50,
+  PREMIUM_MONTHLY_CREDITS: 150,
+  BASE_EXPORT_COST: 2,
+  PREMIUM_FORMAT_COST: 1,
+  DEFAULT_PACKS: [...],
+}
+```
+
+### Flow
+1. User exports image → Frontend shows credit cost preview
+2. On export, `POST /credits-deduct` deducts credits
+3. If insufficient credits, redirect to `/store`
+4. User buys pack → Razorpay checkout → `POST /credits-verify-purchase` grants credits
+
+### State Management
+- `AuthContext` includes `wallet` state with balance and monthly info
+- `updateWallet()` and `refreshWallet()` methods available
+- `CreditDisplay` component shows balance in header
+
 ## Core Data Flow
 
 1. **Image Upload** - User drops/selects image → `fileToDataUrl()` converts to data URL
@@ -205,6 +268,7 @@ User state managed via `AuthContext`:
 | State | Purpose |
 |-------|---------|
 | `user` | Current user object (includes isPremium) |
+| `wallet` | Credit wallet (balance, monthlyCreditsUsed, etc.) |
 | `isAuthenticated` | Whether user is logged in |
 | `isLoading` | Auth state loading |
 
@@ -258,7 +322,7 @@ Premium (`user.isPremium=true`) skips watermarks entirely.
 - **CropSettings**: Aspect ratio buttons + circular/square toggle
 - **TransformControls**: 90° rotation CW/CCW, horizontal/vertical flip
 - **AdjustmentControls**: Sliders for brightness, contrast, saturation, blur + grayscale/sepia toggles + undo/reset
-- **ExportSettings**: Format dropdown, quality slider (disabled for PNG), export/copy buttons
+- **ExportSettings**: Format dropdown, quality slider, credit cost preview, insufficient credits warning, export/copy buttons
 
 ## API Client (src/utils/api.ts)
 
@@ -288,6 +352,13 @@ paymentApi.createOrder()
 referralApi.getMyCode()
 referralApi.validate(code)
 referralApi.apply(code)
+
+creditsApi.getBalance()
+creditsApi.getPacks()
+creditsApi.calculateCost({ format, quality })
+creditsApi.deduct({ format, quality, exportId? })
+creditsApi.createOrder(packId)
+creditsApi.verifyPurchase({ razorpay_order_id, razorpay_payment_id, razorpay_signature, packId })
 ```
 
 ## Environment Variables

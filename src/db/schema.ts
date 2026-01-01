@@ -87,6 +87,60 @@ export const referralUsages = pgTable("referral_usages", {
   paidAt: timestamp("paid_at"),
 });
 
+// Credit system tables
+export const creditWallets = pgTable("credit_wallets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  balance: integer("balance").default(0).notNull(),
+  monthlyCreditsUsed: integer("monthly_credits_used").default(0).notNull(),
+  monthlyCreditsLimit: integer("monthly_credits_limit").default(50).notNull(), // 50 for free, 150 for premium
+  lastMonthlyReset: timestamp("last_monthly_reset").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const creditTransactions = pgTable("credit_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  walletId: uuid("wallet_id")
+    .notNull()
+    .references(() => creditWallets.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // "monthly_grant" | "purchase" | "export" | "refund"
+  amount: integer("amount").notNull(), // Positive for credit, negative for debit
+  balanceAfter: integer("balance_after").notNull(),
+  description: text("description"),
+  metadata: text("metadata"), // JSON string for additional data
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const creditPacks = pgTable("credit_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(), // "Noob", "Value", "Rich", "Deal Breaker"
+  credits: integer("credits").notNull(),
+  bonusCredits: integer("bonus_credits").default(0).notNull(),
+  priceInPaise: integer("price_in_paise").notNull(), // 4900 = ₹49
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const creditPurchases = pgTable("credit_purchases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  packId: uuid("pack_id")
+    .notNull()
+    .references(() => creditPacks.id, { onDelete: "restrict" }),
+  paymentId: uuid("payment_id").references(() => payments.id, { onDelete: "set null" }),
+  creditsGranted: integer("credits_granted").notNull(),
+  amountPaid: integer("amount_paid").notNull(), // in paise
+  status: text("status").default("pending").notNull(), // "pending" | "completed" | "failed"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Type exports for use in application
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -102,3 +156,11 @@ export type ReferralCode = typeof referralCodes.$inferSelect;
 export type NewReferralCode = typeof referralCodes.$inferInsert;
 export type ReferralUsage = typeof referralUsages.$inferSelect;
 export type NewReferralUsage = typeof referralUsages.$inferInsert;
+export type CreditWallet = typeof creditWallets.$inferSelect;
+export type NewCreditWallet = typeof creditWallets.$inferInsert;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+export type NewCreditTransaction = typeof creditTransactions.$inferInsert;
+export type CreditPack = typeof creditPacks.$inferSelect;
+export type NewCreditPack = typeof creditPacks.$inferInsert;
+export type CreditPurchase = typeof creditPurchases.$inferSelect;
+export type NewCreditPurchase = typeof creditPurchases.$inferInsert;

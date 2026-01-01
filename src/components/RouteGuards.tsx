@@ -1,9 +1,9 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingScreen } from "./LoadingScreen";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -14,10 +14,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 }
 
-export function PublicRoute({ children }: { children: React.ReactNode }) {
+export function PublicLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -28,5 +28,5 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 }

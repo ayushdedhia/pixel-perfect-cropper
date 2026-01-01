@@ -1,5 +1,6 @@
-import { Upload, Image, Sparkles, Crop, Palette, Download } from "lucide-react";
+import { Crop, Download, Image, Palette, Sparkles, Upload } from "lucide-react";
 import { useRef, useState } from "react";
+
 import { fileToDataUrl } from "../utils/image-utils";
 
 interface UploadAreaProps {
@@ -43,7 +44,7 @@ export function UploadArea({ onImageLoad }: UploadAreaProps) {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-violet-500/5 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-2xl w-full relative z-10">
@@ -60,21 +61,28 @@ export function UploadArea({ onImageLoad }: UploadAreaProps) {
           onDrop={handleDrop}
         >
           {/* Inner glow effect */}
-          <div className="absolute inset-0 rounded-3xl md:rounded-[2.5rem] bg-gradient-to-b from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="absolute inset-0 rounded-3xl md:rounded-[2.5rem] bg-linear-to-b from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
           {/* Icon container */}
-          <div className={`relative w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 transition-all duration-300 ${
-            isDragging
-              ? "bg-gradient-to-br from-violet-600 to-purple-600 scale-110"
-              : "bg-gradient-to-br from-slate-800 to-slate-800/80 group-hover:from-violet-600 group-hover:to-purple-600 group-hover:scale-110"
-          }`}>
+          <div
+            className={`relative w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 transition-all duration-300 ${
+              isDragging
+                ? "bg-linear-to-br from-violet-600 to-purple-600 scale-110"
+                : "bg-linear-to-br from-slate-800 to-slate-800/80 group-hover:from-violet-600 group-hover:to-purple-600 group-hover:scale-110"
+            }`}
+          >
             {/* Icon glow */}
-            <div className={`absolute inset-0 rounded-2xl md:rounded-3xl transition-opacity duration-300 ${
-              isDragging ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            }`} style={{ boxShadow: "0 0 40px rgba(139, 92, 246, 0.4)" }} />
-            <Upload className={`relative w-9 h-9 md:w-11 md:h-11 transition-colors duration-300 ${
-              isDragging ? "text-white" : "text-violet-400 group-hover:text-white"
-            }`} />
+            <div
+              className={`absolute inset-0 rounded-2xl md:rounded-3xl transition-opacity duration-300 ${
+                isDragging ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+              style={{ boxShadow: "0 0 40px rgba(139, 92, 246, 0.4)" }}
+            />
+            <Upload
+              className={`relative w-9 h-9 md:w-11 md:h-11 transition-colors duration-300 ${
+                isDragging ? "text-white" : "text-violet-400 group-hover:text-white"
+              }`}
+            />
           </div>
 
           {/* Text content */}
@@ -88,7 +96,7 @@ export function UploadArea({ onImageLoad }: UploadAreaProps) {
           </p>
 
           {/* CTA Button */}
-          <button className="relative bg-gradient-to-r from-violet-600 via-violet-500 to-purple-500 text-white px-8 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-semibold text-base md:text-lg transition-all duration-200 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:from-violet-500 hover:via-violet-400 hover:to-purple-400 active:scale-95">
+          <button className="relative bg-linear-to-r from-violet-600 via-violet-500 to-purple-500 text-white px-8 md:px-10 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-semibold text-base md:text-lg transition-all duration-200 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:from-violet-500 hover:via-violet-400 hover:to-purple-400 active:scale-95">
             <span className="flex items-center gap-2">
               <Image className="w-5 h-5" />
               Choose File
@@ -128,7 +136,10 @@ export function UploadArea({ onImageLoad }: UploadAreaProps) {
         {/* Premium hint */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs md:text-sm text-slate-500">
           <Sparkles className="w-4 h-4 text-amber-400/70" />
-          <span>Upgrade to <span className="text-amber-400/90 font-medium">Premium</span> for watermark-free exports</span>
+          <span>
+            Upgrade to <span className="text-amber-400/90 font-medium">Premium</span> for
+            watermark-free exports
+          </span>
         </div>
 
         <input

@@ -1,9 +1,9 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useMemo } from "react";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { LoadingScreen } from "./components/LoadingScreen";
-import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
+import { ProtectedLayout, PublicLayout } from "./components/RouteGuards";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
@@ -21,77 +21,51 @@ const ResetPasswordPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage }))
 );
+const StorePage = lazy(() =>
+  import("./pages/StorePage").then((m) => ({ default: m.StorePage }))
+);
 
-function AppRoutes() {
+function AppRouter() {
+  const router = useMemo(
+    () =>
+      createBrowserRouter([
+        {
+          element: <PublicLayout />,
+          children: [
+            { path: "/login", element: <LoginPage /> },
+            { path: "/register", element: <RegisterPage /> },
+            { path: "/forgot-password", element: <ForgotPasswordPage /> },
+            { path: "/reset-password", element: <ResetPasswordPage /> },
+          ],
+        },
+        {
+          element: <ProtectedLayout />,
+          children: [
+            { path: "/", element: <HomePage /> },
+            { path: "/settings", element: <SettingsPage /> },
+            { path: "/store", element: <StorePage /> },
+          ],
+        },
+        { path: "*", element: <Navigate to="/" replace /> },
+      ]),
+    []
+  );
+
   return (
-    <>
-      <Toaster theme="dark" position="bottom-center" richColors className="font-sans!" />
-      <Suspense fallback={<LoadingScreen />}>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <RegisterPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPasswordPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={
-              <PublicRoute>
-                <ResetPasswordPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </>
+    <Suspense fallback={<LoadingScreen />}>
+      <RouterProvider router={router} />
+    </Suspense>
   );
 }
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-          <AppRoutes />
-        </ThemeProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <ThemeProvider>
+        <Toaster theme="dark" position="bottom-center" richColors className="font-sans!" />
+        <AppRouter />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

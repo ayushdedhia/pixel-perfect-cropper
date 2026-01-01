@@ -33,13 +33,6 @@ export const handler: Handler = async (event) => {
       return jsonResponse(404, { error: "User not found" });
     }
 
-    // Get user preferences
-    const [preferences] = await db
-      .select()
-      .from(schema.preferences)
-      .where(eq(schema.preferences.userId, user.id))
-      .limit(1);
-
     // Get or create wallet
     let [wallet] = await db
       .select()
@@ -100,25 +93,15 @@ export const handler: Handler = async (event) => {
     const monthlyCreditsRemaining = wallet.monthlyCreditsLimit - wallet.monthlyCreditsUsed;
 
     return jsonResponse(200, {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        profilePictureUrl: user.profilePictureUrl,
-        isPremium: user.isPremium,
-        createdAt: user.createdAt,
-      },
-      preferences: preferences || null,
-      wallet: {
-        balance: wallet.balance,
-        monthlyCreditsUsed: wallet.monthlyCreditsUsed,
-        monthlyCreditsLimit: wallet.monthlyCreditsLimit,
-        monthlyCreditsRemaining: Math.max(0, monthlyCreditsRemaining),
-        daysUntilReset: getDaysUntilReset(),
-      },
+      balance: wallet.balance,
+      monthlyCreditsUsed: wallet.monthlyCreditsUsed,
+      monthlyCreditsLimit: wallet.monthlyCreditsLimit,
+      monthlyCreditsRemaining: Math.max(0, monthlyCreditsRemaining),
+      daysUntilReset: getDaysUntilReset(),
+      isPremium: user.isPremium,
     });
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error("Get credits balance error:", error);
     return jsonResponse(500, { error: "Internal server error" });
   }
 };

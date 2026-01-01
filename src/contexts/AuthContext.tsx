@@ -11,11 +11,13 @@ import {
   setAccessToken,
   type AuthUser,
   type UserPreferences,
+  type CreditWallet,
 } from "../utils/api";
 
 interface AuthState {
   user: AuthUser | null;
   preferences: UserPreferences | null;
+  wallet: CreditWallet | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -26,6 +28,8 @@ interface AuthContextValue extends AuthState {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (user: Partial<AuthUser>) => void;
+  updateWallet: (wallet: Partial<CreditWallet>) => void;
+  refreshWallet: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     preferences: null,
+    wallet: null,
     isLoading: true,
     isAuthenticated: false,
   });
@@ -47,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({
         user: profile.user,
         preferences: profile.preferences,
+        wallet: profile.wallet,
         isLoading: false,
         isAuthenticated: true,
       });
@@ -55,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({
         user: null,
         preferences: null,
+        wallet: null,
         isLoading: false,
         isAuthenticated: false,
       });
@@ -72,16 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({
       user: response.user,
       preferences: null,
+      wallet: null,
       isLoading: false,
       isAuthenticated: true,
     });
 
-    // Fetch full profile with preferences
+    // Fetch full profile with preferences and wallet
     try {
       const profile = await authApi.me();
       setState((prev) => ({
         ...prev,
         preferences: profile.preferences,
+        wallet: profile.wallet,
       }));
     } catch {
       // Ignore error, we have the basic user info
@@ -96,9 +105,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({
         user: response.user,
         preferences: null,
+        wallet: null,
         isLoading: false,
         isAuthenticated: true,
       });
+
+      // Fetch full profile with wallet
+      try {
+        const profile = await authApi.me();
+        setState((prev) => ({
+          ...prev,
+          preferences: profile.preferences,
+          wallet: profile.wallet,
+        }));
+      } catch {
+        // Ignore error
+      }
     },
     []
   );
@@ -113,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({
         user: null,
         preferences: null,
+        wallet: null,
         isLoading: false,
         isAuthenticated: false,
       });
@@ -126,6 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const updateWallet = useCallback((updates: Partial<CreditWallet>) => {
+    setState((prev) => ({
+      ...prev,
+      wallet: prev.wallet ? { ...prev.wallet, ...updates } : null,
+    }));
+  }, []);
+
+  const refreshWallet = useCallback(async () => {
+    try {
+      const profile = await authApi.me();
+      setState((prev) => ({
+        ...prev,
+        wallet: profile.wallet,
+      }));
+    } catch {
+      // Ignore error
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -135,6 +177,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refreshUser,
         updateUser,
+        updateWallet,
+        refreshWallet,
       }}
     >
       {children}

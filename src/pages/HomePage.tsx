@@ -11,10 +11,11 @@ import { UploadArea } from "../components/UploadArea";
 import { useAuth } from "../contexts/AuthContext";
 import { EXPORT_INITIAL_STATE, FILTERS_INITIAL_STATE } from "../constants";
 import type { Area, ExportConfig, ImageFilters } from "../types";
+import { creditsApi, type ExportFormat } from "../utils/api";
 import { getCroppedImg } from "../utils/image-utils";
 
 export function HomePage() {
-  const { user } = useAuth();
+  const { user, wallet, updateWallet } = useAuth();
   const isPremium = user?.isPremium ?? false;
 
   const [image, setImage] = useState<string | null>(null);
@@ -90,6 +91,16 @@ export function HomePage() {
     if (!image || !completedCrop || !imgRef.current) return;
     setIsDownloading(true);
     try {
+      // Deduct credits first
+      const skipWatermark = isPremium;
+      const deductResult = await creditsApi.deduct({
+        format: exportConfig.format as ExportFormat,
+        quality: exportConfig.quality,
+      });
+
+      // Update wallet balance
+      updateWallet({ balance: deductResult.newBalance });
+
       const area: Area = {
         x: completedCrop.x,
         y: completedCrop.y,
@@ -97,7 +108,7 @@ export function HomePage() {
         height: completedCrop.height,
       };
       const displaySize = { width: imgRef.current.width, height: imgRef.current.height };
-      const blob = await getCroppedImg(image, area, filters, displaySize, exportConfig, isPremium);
+      const blob = await getCroppedImg(image, area, filters, displaySize, exportConfig, skipWatermark);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const ext = exportConfig.format.split("/")[1];
@@ -105,8 +116,14 @@ export function HomePage() {
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
+      toast.success(`Exported! ${deductResult.creditsDeducted} credits used`);
     } catch (e) {
       console.error(e);
+      if (e instanceof Error && e.message.includes("Insufficient")) {
+        toast.error("Insufficient credits. Buy more to continue exporting.");
+      } else {
+        toast.error("Export failed. Please try again.");
+      }
     } finally {
       setIsDownloading(false);
     }
@@ -116,6 +133,16 @@ export function HomePage() {
     if (!image || !completedCrop || !imgRef.current) return;
     setIsCopying(true);
     try {
+      // Deduct credits first (PNG format for clipboard)
+      const skipWatermark = isPremium;
+      const deductResult = await creditsApi.deduct({
+        format: "image/png" as ExportFormat,
+        quality: 100,
+      });
+
+      // Update wallet balance
+      updateWallet({ balance: deductResult.newBalance });
+
       const area: Area = {
         x: completedCrop.x,
         y: completedCrop.y,
@@ -129,13 +156,17 @@ export function HomePage() {
         filters,
         displaySize,
         { ...exportConfig, format: "image/png" },
-        isPremium
+        skipWatermark
       );
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.success("Copied PNG to clipboard!");
+      toast.success(`Copied to clipboard! ${deductResult.creditsDeducted} credits used`);
     } catch (e) {
       console.error(e);
-      toast.error("Clipboard copy failed. Try downloading instead.");
+      if (e instanceof Error && e.message.includes("Insufficient")) {
+        toast.error("Insufficient credits. Buy more to continue exporting.");
+      } else {
+        toast.error("Clipboard copy failed. Try downloading instead.");
+      }
     } finally {
       setIsCopying(false);
     }
@@ -193,6 +224,7 @@ export function HomePage() {
               isCopying={isCopying}
               canExport={!!completedCrop}
               isPremium={isPremium}
+              wallet={wallet}
               onAspectChange={setAspect}
               onCircularChange={handleCircularChange}
               onUpdateFilters={updateFilters}

@@ -112,9 +112,18 @@ export interface UserPreferences {
   theme: string;
 }
 
+export interface CreditWallet {
+  balance: number;
+  monthlyCreditsUsed: number;
+  monthlyCreditsLimit: number;
+  monthlyCreditsRemaining: number;
+  daysUntilReset: number;
+}
+
 export interface ProfileResponse {
   user: AuthUser;
   preferences: UserPreferences | null;
+  wallet: CreditWallet | null;
 }
 
 export interface ForgotPasswordResponse {
@@ -270,4 +279,124 @@ export const referralApi = {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
+};
+
+// Credits API
+export interface CreditPack {
+  id: string;
+  name: string;
+  credits: number;
+  bonusCredits: number;
+  totalCredits: number;
+  priceInPaise: number;
+  priceFormatted: string;
+}
+
+export interface CreditBalanceResponse {
+  balance: number;
+  monthlyCreditsUsed: number;
+  monthlyCreditsLimit: number;
+  monthlyCreditsRemaining: number;
+  daysUntilReset: number;
+  isPremium: boolean;
+}
+
+export interface CreditPacksResponse {
+  packs: CreditPack[];
+}
+
+export interface CreditCostBreakdown {
+  base: number;
+  watermark: number;
+  format: number;
+}
+
+export interface CreditCalculateResponse {
+  cost: number;
+  breakdown: CreditCostBreakdown;
+  canAfford: boolean;
+  currentBalance: number;
+}
+
+export interface CreditDeductResponse {
+  success: boolean;
+  creditsDeducted: number;
+  newBalance: number;
+  transactionId: string;
+}
+
+export interface CreditOrderResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string;
+  packName: string;
+  creditsToGrant: number;
+}
+
+export interface CreditVerifyResponse {
+  success: boolean;
+  creditsGranted: number;
+  newBalance: number;
+}
+
+export interface CreditTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  balanceAfter: number;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface CreditHistoryResponse {
+  transactions: CreditTransaction[];
+  total: number;
+}
+
+export type ExportFormat = "image/png" | "image/jpeg" | "image/webp";
+
+export const creditsApi = {
+  getBalance: () => api<CreditBalanceResponse>("/credits-balance"),
+
+  getPacks: () => api<CreditPacksResponse>("/credits-packs"),
+
+  calculateCost: (options: {
+    format: ExportFormat;
+    quality: number;
+  }) =>
+    api<CreditCalculateResponse>("/credits-calculate", {
+      method: "POST",
+      body: JSON.stringify(options),
+    }),
+
+  deduct: (options: {
+    format: ExportFormat;
+    quality: number;
+    exportId?: string;
+  }) =>
+    api<CreditDeductResponse>("/credits-deduct", {
+      method: "POST",
+      body: JSON.stringify(options),
+    }),
+
+  createOrder: (packId: string) =>
+    api<CreditOrderResponse>("/credits-create-order", {
+      method: "POST",
+      body: JSON.stringify({ packId }),
+    }),
+
+  verifyPurchase: (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    packId: string;
+  }) =>
+    api<CreditVerifyResponse>("/credits-verify-purchase", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getHistory: (limit = 20, offset = 0) =>
+    api<CreditHistoryResponse>(`/credits-history?limit=${limit}&offset=${offset}`),
 };
