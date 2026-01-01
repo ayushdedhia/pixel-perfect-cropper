@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**See also:**
+- `src/CLAUDE.md` - Frontend patterns and styling
+- `netlify/functions/CLAUDE.md` - API conventions
+
 ## Development Commands
 
 ```bash
@@ -27,7 +31,10 @@ src/
 │   ├── CropCanvas.tsx           # Main crop interface with zoom
 │   ├── CropPreview.tsx          # Desktop preview panel
 │   ├── Header.tsx               # Top nav with logo and user menu
-│   ├── PremiumModal.tsx         # Premium upgrade modal
+│   ├── LoadingScreen.tsx        # Full-screen loading spinner
+│   ├── PremiumModal.tsx         # Premium upgrade modal with Razorpay + referral input
+│   ├── ProfilePictureCropper.tsx # Modal for cropping profile pictures
+│   ├── RouteGuards.tsx          # ProtectedRoute and PublicRoute components
 │   ├── StatusBar.tsx            # Bottom metadata bar
 │   ├── UploadArea.tsx           # Drag-drop image upload
 │   ├── UserMenu.tsx             # User dropdown (profile, settings, logout)
@@ -38,20 +45,25 @@ src/
 │       ├── Sidebar.tsx              # Container
 │       └── TransformControls.tsx    # Rotation/flip
 ├── contexts/
-│   └── AuthContext.tsx          # Authentication state provider
+│   ├── AuthContext.tsx          # Authentication state provider
+│   └── ThemeContext.tsx         # Theme state (light/dark/system)
 ├── pages/
+│   ├── HomePage.tsx             # Main cropper interface
 │   ├── LoginPage.tsx            # Login page with modern UI
 │   ├── RegisterPage.tsx         # Registration page
 │   ├── ForgotPasswordPage.tsx   # Password reset request
-│   └── ResetPasswordPage.tsx    # Password reset form
+│   ├── ResetPasswordPage.tsx    # Password reset form
+│   └── SettingsPage.tsx         # User settings (profile, password, theme, referrals)
 ├── db/
-│   └── schema.ts                # Drizzle ORM schema (users, sessions, etc.)
+│   └── schema.ts                # Drizzle ORM schema (users, sessions, referrals, payments)
 ├── utils/
 │   ├── api.ts                   # API client with auth headers
+│   ├── cloudinary.ts            # Cloudinary upload for profile pictures
 │   ├── image-utils.ts           # Canvas-based image processing
+│   ├── razorpay.ts              # Razorpay checkout integration
 │   └── storage.ts               # IndexedDB persistence
 ├── assets/brand/                # Logo assets (logo.svg, logo-monochrome.svg)
-├── App.tsx                      # Main component with routing
+├── App.tsx                      # Route definitions with lazy loading
 ├── constants.ts                 # Aspect ratios, initial states
 ├── types.ts                     # TypeScript definitions
 ├── index.css                    # Tailwind + global styles (Plus Jakarta Sans font)
@@ -60,7 +72,8 @@ src/
 netlify/functions/               # Serverless API endpoints
 ├── _lib/
 │   ├── auth.ts                  # JWT utilities, password hashing
-│   └── db.ts                    # Neon DB connection
+│   ├── db.ts                    # Neon DB connection
+│   └── referral.ts              # Referral code utilities and constants
 ├── auth-register.ts             # POST /auth-register
 ├── auth-login.ts                # POST /auth-login
 ├── auth-logout.ts               # POST /auth-logout
@@ -69,7 +82,13 @@ netlify/functions/               # Serverless API endpoints
 ├── auth-forgot-password.ts      # POST /auth-forgot-password
 ├── auth-reset-password.ts       # POST /auth-reset-password
 ├── user-profile.ts              # GET/PUT /user-profile
-└── user-premium.ts              # POST /user-premium
+├── user-premium.ts              # POST /user-premium (verify payment + referral tracking)
+├── user-change-password.ts      # POST /user-change-password
+├── upload-signature.ts          # GET /upload-signature (Cloudinary signed uploads)
+├── payment-create-order.ts      # POST /payment-create-order (Razorpay)
+├── referral-code.ts             # GET /referral-code (get user's referral code)
+├── referral-validate.ts         # POST /referral-validate (validate a code)
+└── referral-apply.ts            # POST /referral-apply (apply code to account)
 ```
 
 ## Authentication System
@@ -77,10 +96,13 @@ netlify/functions/               # Serverless API endpoints
 ### Database (Neon + Drizzle ORM)
 
 Schema in `src/db/schema.ts`:
-- **users**: id, email, passwordHash, name, isPremium, createdAt, updatedAt
+- **users**: id, email, passwordHash, name, profilePictureUrl, isPremium, createdAt, updatedAt
 - **sessions**: id, userId, refreshToken, expiresAt, createdAt
 - **preferences**: id, userId, defaultExportFormat, defaultQuality, theme
 - **passwordResetTokens**: id, userId, token, expiresAt, usedAt, createdAt
+- **payments**: id, userId, razorpayOrderId, razorpayPaymentId, razorpaySignature, amount, currency, status, createdAt, updatedAt
+- **referralCodes**: id, userId, code (unique "PIXEL-XXXXXX"), successfulReferrals, createdAt
+- **referralUsages**: id, referralCodeId, referredUserId, paymentId, status ("pending"/"paid"), discountApplied, createdAt, paidAt
 
 ### JWT Strategy
 - **Access Token**: Short-lived (15 min), stored in memory
@@ -98,9 +120,67 @@ Schema in `src/db/schema.ts`:
 2. Demo mode shows reset URL directly (production would email)
 3. User sets new password → All sessions invalidated
 
-### Protected Routes
+### Protected Routes (src/components/RouteGuards.tsx)
 - `ProtectedRoute` - Redirects to `/login` if not authenticated
 - `PublicRoute` - Redirects to `/` if already authenticated
+
+### Lazy Loading Routes (src/App.tsx)
+All page components are lazy-loaded using `React.lazy()` for code-splitting:
+- Each page is a separate chunk loaded on-demand
+- `Suspense` with `LoadingScreen` fallback during chunk loading
+- Reduces initial bundle size significantly
+
+## Payment System (Razorpay)
+
+### Flow
+1. User clicks "Get Premium" in `PremiumModal`
+2. Frontend calls `POST /payment-create-order` → creates Razorpay order
+3. Razorpay checkout opens (loaded via `src/utils/razorpay.ts`)
+4. User completes payment → Razorpay returns payment details
+5. Frontend calls `POST /user-premium` with payment verification data
+6. Backend verifies Razorpay signature and upgrades user to premium
+
+### Pricing
+- Base price: ₹299 (29900 paise)
+- With referral discount: ₹269 (26910 paise) - 10% off
+
+### Files
+- `src/utils/razorpay.ts` - `loadRazorpayScript()`, `openRazorpayCheckout()`
+- `netlify/functions/payment-create-order.ts` - Create Razorpay order
+- `netlify/functions/user-premium.ts` - Verify payment and upgrade user
+
+## Referral System
+
+### Business Rules
+- Each user gets one unique referral code: `PIXEL-XXXXXX` (6 alphanumeric chars)
+- **Referred user**: Gets 10% discount (₹269 instead of ₹299)
+- **Referrer**: After 3 successful paid referrals → Free Premium auto-granted
+- Users can only use one referral code ever (stored in `referralUsages`)
+
+### Flow
+1. User enters referral code in `PremiumModal` (just the 6-char part, "PIXEL-" is auto-prefixed)
+2. Code validated via `POST /referral-validate`
+3. Code applied via `POST /referral-apply` → creates pending `referralUsages` entry
+4. When user pays, `user-premium.ts`:
+   - Updates referral usage to "paid"
+   - Increments referrer's `successfulReferrals`
+   - If referrer hits 3, auto-grants them premium
+
+### Constants (`netlify/functions/_lib/referral.ts`)
+```typescript
+REFERRAL_CONSTANTS = {
+  BASE_PREMIUM_AMOUNT: 29900,      // ₹299 in paise
+  DISCOUNT_PERCENT: 10,
+  DISCOUNT_AMOUNT: 2990,           // ₹29.90 in paise
+  DISCOUNTED_AMOUNT: 26910,        // ₹269.10 in paise
+  REFERRALS_FOR_FREE_PREMIUM: 3,
+  CODE_PREFIX: "PIXEL-",
+}
+```
+
+### UI
+- **PremiumModal**: Referral code input with "PIXEL-" prefix badge, info tooltip
+- **SettingsPage**: Referral Program card with user's code, copy/share buttons, stats, referred users list
 
 ## Core Data Flow
 
@@ -108,9 +188,9 @@ Schema in `src/db/schema.ts`:
 2. **Live Editing** - Crop selection and filters applied via CSS transforms for real-time preview
 3. **Export** - `getCroppedImg()` uses HTML5 Canvas to apply all transformations at native resolution
 
-### State Management (App.tsx)
+### State Management (src/pages/HomePage.tsx)
 
-All image editing state lives in MainApp component:
+All image editing state lives in HomePage component:
 
 | State | Purpose |
 |-------|---------|
@@ -198,8 +278,16 @@ authApi.forgotPassword(email)
 authApi.resetPassword(token, password)
 
 userApi.getProfile()
-userApi.updateProfile({ name?, preferences? })
-userApi.upgradeToPremium(paymentId)
+userApi.updateProfile({ name?, profilePictureUrl?, preferences? })
+userApi.upgradeToPremium({ razorpay_order_id, razorpay_payment_id, razorpay_signature })
+userApi.getUploadSignature()
+userApi.changePassword(currentPassword, newPassword)
+
+paymentApi.createOrder()
+
+referralApi.getMyCode()
+referralApi.validate(code)
+referralApi.apply(code)
 ```
 
 ## Environment Variables
@@ -209,6 +297,11 @@ Required in `.env`:
 DATABASE_URL=postgresql://...     # Neon connection string
 JWT_SECRET=...                    # Secret for access tokens
 JWT_REFRESH_SECRET=...            # Secret for refresh tokens
+RAZORPAY_KEY_ID=...               # Razorpay API key ID
+RAZORPAY_KEY_SECRET=...           # Razorpay API key secret
+CLOUDINARY_CLOUD_NAME=...         # Cloudinary cloud name
+CLOUDINARY_API_KEY=...            # Cloudinary API key
+CLOUDINARY_API_SECRET=...         # Cloudinary API secret
 ```
 
 ## Type Definitions (types.ts)
@@ -250,6 +343,7 @@ interface ExportConfig { format, quality, circular }
 | drizzle-orm | Type-safe ORM |
 | bcryptjs | Password hashing |
 | jsonwebtoken | JWT generation/verification |
+| razorpay | Razorpay payment gateway (backend) |
 
 ## Responsive Design
 

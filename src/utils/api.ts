@@ -95,6 +95,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string | null;
+  profilePictureUrl: string | null;
   isPremium: boolean;
   createdAt?: string;
 }
@@ -122,6 +123,19 @@ export interface ForgotPasswordResponse {
 }
 
 export interface ResetPasswordResponse {
+  message: string;
+}
+
+export interface UploadSignatureResponse {
+  signature: string;
+  timestamp: number;
+  cloudName: string;
+  apiKey: string;
+  folder: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
   message: string;
 }
 
@@ -171,15 +185,89 @@ export const authApi = {
 export const userApi = {
   getProfile: () => api<ProfileResponse>("/user-profile"),
 
-  updateProfile: (data: { name?: string; preferences?: Partial<UserPreferences> }) =>
+  updateProfile: (data: {
+    name?: string;
+    profilePictureUrl?: string | null;
+    preferences?: Partial<UserPreferences>;
+  }) =>
     api<ProfileResponse>("/user-profile", {
       method: "PUT",
       body: JSON.stringify(data),
     }),
 
-  upgradeToPremium: (paymentId: string) =>
+  upgradeToPremium: (data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) =>
     api<{ success: boolean; user: AuthUser }>("/user-premium", {
       method: "POST",
-      body: JSON.stringify({ paymentId }),
+      body: JSON.stringify(data),
+    }),
+
+  getUploadSignature: () => api<UploadSignatureResponse>("/upload-signature"),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api<ChangePasswordResponse>("/user-change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+};
+
+// Payment API
+export interface CreateOrderResponse {
+  orderId: string;
+  amount: number;
+  originalAmount: number;
+  discount: number;
+  discountSource: string | null;
+  currency: string;
+  keyId: string;
+}
+
+export const paymentApi = {
+  createOrder: () =>
+    api<CreateOrderResponse>("/payment-create-order", {
+      method: "POST",
+    }),
+};
+
+// Referral API
+export interface ReferralCodeResponse {
+  code: string;
+  successfulReferrals: number;
+  referredUsers: Array<{
+    email: string;
+    status: "pending" | "paid";
+    createdAt: string;
+  }>;
+}
+
+export interface ReferralValidateResponse {
+  valid: boolean;
+  discount: number;
+  referrerName: string | null;
+  message: string;
+}
+
+export interface ReferralApplyResponse {
+  success: boolean;
+  message: string;
+  discount: number;
+}
+
+export const referralApi = {
+  getMyCode: () => api<ReferralCodeResponse>("/referral-code"),
+
+  validate: (code: string) =>
+    api<ReferralValidateResponse>("/referral-validate", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  apply: (code: string) =>
+    api<ReferralApplyResponse>("/referral-apply", {
+      method: "POST",
+      body: JSON.stringify({ code }),
     }),
 };

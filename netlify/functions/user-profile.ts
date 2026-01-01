@@ -40,6 +40,7 @@ export const handler: Handler = async (event) => {
           id: user.id,
           email: user.email,
           name: user.name,
+          profilePictureUrl: user.profilePictureUrl,
           isPremium: user.isPremium,
           createdAt: user.createdAt,
         },
@@ -48,13 +49,30 @@ export const handler: Handler = async (event) => {
     }
 
     if (event.httpMethod === "PUT") {
-      const { name, preferences: prefUpdate } = JSON.parse(event.body || "{}");
+      const { name, profilePictureUrl, preferences: prefUpdate } = JSON.parse(event.body || "{}");
 
-      // Update user name if provided
+      // Build user update object
+      const userUpdate: { name?: string; profilePictureUrl?: string | null; updatedAt: Date } = {
+        updatedAt: new Date(),
+      };
+
       if (name !== undefined) {
+        userUpdate.name = name;
+      }
+
+      if (profilePictureUrl !== undefined) {
+        // Validate Cloudinary URL format if provided (allow null to remove picture)
+        if (profilePictureUrl !== null && !profilePictureUrl.startsWith('https://res.cloudinary.com/')) {
+          return jsonResponse(400, { error: "Invalid profile picture URL" });
+        }
+        userUpdate.profilePictureUrl = profilePictureUrl;
+      }
+
+      // Update user if there are changes
+      if (Object.keys(userUpdate).length > 1) {
         await db
           .update(schema.users)
-          .set({ name, updatedAt: new Date() })
+          .set(userUpdate)
           .where(eq(schema.users.id, payload.userId));
       }
 
@@ -87,6 +105,7 @@ export const handler: Handler = async (event) => {
           id: user.id,
           email: user.email,
           name: user.name,
+          profilePictureUrl: user.profilePictureUrl,
           isPremium: user.isPremium,
           createdAt: user.createdAt,
         },

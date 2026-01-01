@@ -64,6 +64,7 @@ export const handler: Handler = async (event) => {
           id: newUser.id,
           email: newUser.email,
           name: newUser.name,
+          profilePictureUrl: newUser.profilePictureUrl,
           isPremium: newUser.isPremium,
         },
         accessToken: tokens.accessToken,

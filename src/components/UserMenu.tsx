@@ -47,18 +47,38 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-9 h-9 rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-105 transition-all duration-200 ring-2 ring-transparent hover:ring-violet-500/30"
+        className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-semibold hover:scale-105 transition-all duration-200 ring-2 ring-slate-700/50 hover:ring-violet-500/40"
       >
-        {initials}
+        {user.profilePictureUrl ? (
+          <img
+            src={user.profilePictureUrl}
+            alt="Profile"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-violet-600 via-violet-500 to-purple-500 flex items-center justify-center">
+            {initials}
+          </div>
+        )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 shadow-2xl shadow-black/50 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/98 backdrop-blur-xl border border-slate-700/40 shadow-2xl shadow-black/60 overflow-hidden z-50">
           {/* User info header */}
-          <div className="px-4 py-4 bg-linear-to-br from-slate-800/50 to-slate-900/50">
+          <div className="px-4 py-4 bg-gradient-to-br from-violet-950/30 to-slate-900/50 border-b border-slate-700/30">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-linear-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-semibold shadow-lg shadow-violet-500/25">
-                {initials}
+              <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center ring-2 ring-violet-500/20">
+                {user.profilePictureUrl ? (
+                  <img
+                    src={user.profilePictureUrl}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-violet-600 via-violet-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                    {initials}
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">
@@ -68,9 +88,9 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
               </div>
             </div>
             {user.isPremium && (
-              <div className="mt-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20">
+              <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/15 to-yellow-500/10 border border-amber-400/20">
                 <Crown size={14} className="text-amber-400" />
-                <span className="text-xs font-medium text-amber-400">Premium Member</span>
+                <span className="text-xs font-semibold bg-gradient-to-r from-amber-400 to-yellow-400 bg-clip-text text-transparent">Premium Member</span>
               </div>
             )}
           </div>
@@ -92,7 +112,7 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
             <button
               onClick={() => {
                 setIsOpen(false);
-                toast.info("Profile settings coming soon!");
+                navigate("/settings");
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200"
             >
@@ -102,7 +122,7 @@ export function UserMenu({ onOpenPremiumModal }: UserMenuProps) {
             <button
               onClick={() => {
                 setIsOpen(false);
-                toast.info("Settings coming soon!");
+                navigate("/settings");
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200"
             >

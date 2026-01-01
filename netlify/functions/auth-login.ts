@@ -55,6 +55,7 @@ export const handler: Handler = async (event) => {
           id: user.id,
           email: user.email,
           name: user.name,
+          profilePictureUrl: user.profilePictureUrl,
           isPremium: user.isPremium,
         },
         accessToken: tokens.accessToken,

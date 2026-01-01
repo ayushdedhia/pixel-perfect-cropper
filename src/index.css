@@ -4,25 +4,59 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+
+  /* Premium brand colors */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+
+  /* Premium gold accent */
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+
+  /* Deep surface colors */
+  --color-surface-950: #0a0910;
+  --color-surface-900: #0f0d1a;
+  --color-surface-800: #1a1625;
+  --color-surface-700: #252033;
 }
 
+/* Premium scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: var(--color-surface-900);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 4px;
+  background: var(--color-brand-700);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--color-brand-600);
 }
 
+/* Selection highlight */
+::selection {
+  background: var(--color-brand-600);
+  color: white;
+}
+
+/* ReactCrop premium styling */
 .ReactCrop {
   display: block;
   max-width: 100%;
@@ -30,17 +64,18 @@
 }
 
 .ReactCrop__crop-selection {
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  border: 2px solid var(--color-brand-400);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 12px var(--color-brand-500);
 }
 
 .ReactCrop__drag-handle {
   width: 12px !important;
   height: 12px !important;
-  background-color: #fff !important;
-  border: 1px solid #000 !important;
+  background-color: white !important;
+  border: 2px solid var(--color-brand-500) !important;
   opacity: 1 !important;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+  border-radius: 2px !important;
 }
 
 .ReactCrop__drag-handle::after {
@@ -51,10 +86,11 @@
 .ReactCrop__drag-handle.ord-ne,
 .ReactCrop__drag-handle.ord-sw,
 .ReactCrop__drag-handle.ord-se {
-  width: 16px !important;
-  height: 16px !important;
-  border-radius: 2px;
-  background-color: #6366f1 !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 3px !important;
+  background-color: var(--color-brand-500) !important;
+  border: 2px solid white !important;
 }
 
 /* Counter-scale handles when zoomed */
